@@ -1,0 +1,446 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import (
+train_test_split,
+cross_val_score,
+GridSearchCV
+)
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
+from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
+from sklearn.metrics import (
+accuracy_score,
+precision_score,
+recall_score,
+f1_score,
+classification_report,
+confusion_matrix
+)
+columns = [
+"ID",
+"Diagnosis",
+"radius_mean",
+"texture_mean",
+"perimeter_mean",
+"area_mean",
+"smoothness_mean",
+"compactness_mean",
+"concavity_mean",
+"concave_points_mean",
+"symmetry_mean",
+"fractal_dimension_mean",
+"radius_se",
+"texture_se",
+"perimeter_se",
+"area_se",
+"smoothness_se",
+"compactness_se",
+"concavity_se",
+"concave_points_se",
+"symmetry_se",
+"fractal_dimension_se",
+"radius_worst",
+"texture_worst",
+"perimeter_worst",
+"area_worst",
+"smoothness_worst",
+"compactness_worst",
+"concavity_worst",
+"concave_points_worst",
+"symmetry_worst",
+"fractal_dimension_worst"
+]
+# Make sure wdbc.data is in the same folder as this program
+df = pd.read_csv(
+"wdbc.data",
+header=None,
+names=columns
+)
+print("=" * 70)
+print("DATASET INFORMATION")
+print("=" * 70)
+print("Dataset Shape:", df.shape)
+print("\nFirst 5 Rows:")
+print(df.head())
+df["Diagnosis"] = df["Diagnosis"].map({
+"M": 1,
+"B": 0
+})
+# Remove ID column
+df = df.drop("ID", axis=1)
+print("\nMissing Values:", df.isnull().sum().sum())
+print("\nClass Distribution:")
+print(df["Diagnosis"].value_counts())
+X = df.drop("Diagnosis", axis=1)
+y = df["Diagnosis"]
+print("\nFeatures:", X.shape)
+print("Target:", y.shape)
+X_train, X_test, y_train, y_test = train_test_split(
+X,
+y,
+test_size=0.20,
+random_state=42,
+stratify=y
+)
+print("\nTraining Samples:", X_train.shape[0])
+print("Testing Samples :", X_test.shape[0])
+svm_model = Pipeline([
+("scaler", StandardScaler()),
+("classifier", SVC())
+])
+rf_model = RandomForestClassifier(
+random_state=42
+)
+ada_model = AdaBoostClassifier(
+random_state=42
+)
+models = {
+"SVM": svm_model,
+"Random Forest": rf_model,
+"AdaBoost": ada_model
+}
+print("\n")
+print("=" * 70)
+print("BASELINE MODEL PERFORMANCE")
+print("=" * 70)
+baseline_results = []
+for name, model in models.items():
+model.fit(X_train, y_train)
+y_pred = model.predict(X_test)
+accuracy = accuracy_score(y_test, y_pred)
+precision = precision_score(y_test, y_pred)
+recall = recall_score(y_test, y_pred)
+f1 = f1_score(y_test, y_pred)
+baseline_results.append({
+"Model": name,
+"Accuracy": accuracy,
+"Precision": precision,
+"Recall": recall,
+"F1 Score": f1
+})
+print("\n", name)
+print("-" * 40)
+print("Accuracy :", round(accuracy, 4))
+print("Precision:", round(precision, 4))
+print("Recall :", round(recall, 4))
+print("F1 Score :", round(f1, 4))
+baseline_df = pd.DataFrame(baseline_results)
+print("\nBaseline Results Table:")
+print(baseline_df.to_string(index=False))
+print("\n")
+print("=" * 70)
+print("5-FOLD CROSS VALIDATION")
+print("=" * 70)
+cv_results = []
+for name, model in models.items():
+scores = cross_val_score(
+model,
+X_train,
+y_train,
+cv=5,
+scoring="accuracy"
+)
+cv_results.append({
+"Model": name,
+"Mean CV Accuracy": scores.mean(),
+"CV Std": scores.std()
+})
+print("\n", name)
+print("CV Scores:", np.round(scores, 4))
+print("Mean CV Accuracy:",
+round(scores.mean(), 4))
+print("CV Standard Deviation:",
+round(scores.std(), 4))
+cv_df = pd.DataFrame(cv_results)
+print("\nCross Validation Results:")
+print(cv_df.to_string(index=False))
+# SVM parameters
+svm_param_grid = {
+"classifier__C": [0.1, 1, 10, 100],
+"classifier__gamma": ["scale", "auto"],
+"classifier__kernel": ["linear", "rbf"]
+}
+# Random Forest parameters
+rf_param_grid = {
+"n_estimators": [50, 100, 200],
+"max_depth": [None, 5, 10, 20],
+"min_samples_split": [2, 5],
+"min_samples_leaf": [1, 2]
+}
+# AdaBoost parameters
+ada_param_grid = {
+"n_estimators": [50, 100, 200],
+"learning_rate": [0.01, 0.1, 0.5, 1.0]
+}
+param_grids = {
+"SVM": svm_param_grid,
+"Random Forest": rf_param_grid,
+"AdaBoost": ada_param_grid
+}
+print("\n")
+print("=" * 70)
+print("HYPERPARAMETER TUNING USING GRID SEARCH")
+print("=" * 70)
+optimized_models = {}
+optimized_results = []
+for name, model in models.items():
+print("\nTuning:", name)
+grid_search = GridSearchCV(
+estimator=model,
+param_grid=param_grids[name],
+cv=5,
+scoring="accuracy",
+n_jobs=-1
+)
+grid_search.fit(X_train, y_train)
+# Store optimized model
+optimized_models[name] = grid_search.best_estimator_
+print("Best Parameters:")
+print(grid_search.best_params_)
+print(
+"Best CV Accuracy:",
+round(grid_search.best_score_, 4)
+)
+# Test optimized model
+y_pred = grid_search.predict(X_test)
+accuracy = accuracy_score(y_test, y_pred)
+precision = precision_score(y_test, y_pred)
+recall = recall_score(y_test, y_pred)
+f1 = f1_score(y_test, y_pred)
+optimized_results.append({
+"Model": name,
+"Accuracy": accuracy,
+"Precision": precision,
+"Recall": recall,
+"F1 Score": f1,
+"Best CV Accuracy": grid_search.best_score_
+})
+optimized_df = pd.DataFrame(optimized_results)
+print("\n")
+print("=" * 70)
+print("OPTIMIZED MODEL PERFORMANCE")
+print("=" * 70)
+print(optimized_df.to_string(index=False))
+comparison = baseline_df.copy()
+comparison = comparison.rename(columns={
+"Accuracy": "Accuracy Before",
+"Precision": "Precision Before",
+"Recall": "Recall Before",
+"F1 Score": "F1 Before"
+})
+comparison["Accuracy After"] = comparison["Model"].map(
+optimized_df.set_index("Model")["Accuracy"]
+)
+comparison["Precision After"] = comparison["Model"].map(
+optimized_df.set_index("Model")["Precision"]
+)
+comparison["Recall After"] = comparison["Model"].map(
+optimized_df.set_index("Model")["Recall"]
+)
+comparison["F1 After"] = comparison["Model"].map(
+optimized_df.set_index("Model")["F1 Score"]
+)
+print("\n")
+print("=" * 70)
+print("BEFORE VS AFTER OPTIMIZATION")
+print("=" * 70)
+print(comparison.to_string(index=False))
+improvement = pd.DataFrame()
+improvement["Model"] = comparison["Model"]
+improvement["Accuracy Improvement"] = (
+comparison["Accuracy After"]
+- comparison["Accuracy Before"]
+)
+improvement["Precision Improvement"] = (
+comparison["Precision After"]
+- comparison["Precision Before"]
+)
+improvement["Recall Improvement"] = (
+comparison["Recall After"]
+- comparison["Recall Before"]
+)
+improvement["F1 Improvement"] = (
+comparison["F1 After"]
+- comparison["F1 Before"]
+)
+print("\n")
+print("=" * 70)
+print("PERFORMANCE IMPROVEMENT")
+print("=" * 70)
+print(
+improvement.round(4).to_string(index=False)
+)
+print("\n")
+print("=" * 70)
+print("CLASSIFICATION REPORTS - OPTIMIZED MODELS")
+print("=" * 70)
+for name, model in optimized_models.items():
+y_pred = model.predict(X_test)
+print("\n", name)
+print("-" * 50)
+print(
+classification_report(
+y_test,
+y_pred,
+target_names=["Benign", "Malignant"]
+)
+)
+fig, axes = plt.subplots(
+1,
+3,
+figsize=(16, 5)
+)
+for ax, (name, model) in zip(
+axes,
+optimized_models.items()
+):
+y_pred = model.predict(X_test)
+cm = confusion_matrix(
+y_test,
+y_pred
+)
+ax.imshow(
+cm,
+cmap="Blues"
+)
+ax.set_title(
+name + "\nConfusion Matrix"
+)
+ax.set_xlabel("Predicted")
+ax.set_ylabel("Actual")
+ax.set_xticks([0, 1])
+ax.set_yticks([0, 1])
+ax.set_xticklabels(
+["Benign", "Malignant"]
+)
+ax.set_yticklabels(
+["Benign", "Malignant"]
+)
+for i in range(2):
+for j in range(2):
+ax.text(
+j,
+i,
+cm[i, j],
+ha="center",
+va="center",
+fontsize=14
+)
+plt.tight_layout()
+plt.show()
+model_names = comparison["Model"]
+before_accuracy = comparison[
+"Accuracy Before"
+]
+after_accuracy = comparison[
+"Accuracy After"
+]
+x = np.arange(
+len(model_names)
+)
+width = 0.35
+plt.figure(
+figsize=(10, 6)
+)
+plt.bar(
+x - width / 2,
+before_accuracy,
+width,
+label="Before Optimization"
+)
+plt.bar(
+x + width / 2,
+after_accuracy,
+width,
+label="After Optimization"
+)
+plt.xlabel("Model")
+plt.ylabel("Accuracy")
+plt.title(
+"Accuracy Before and After Optimization"
+)
+plt.xticks(
+x,
+model_names
+)
+plt.ylim(
+0,
+1.05
+)
+plt.legend()
+plt.tight_layout()
+plt.show()
+metrics = [
+"Accuracy",
+"Precision",
+"Recall",
+"F1 Score"
+]
+fig, axes = plt.subplots(
+1,
+4,
+figsize=(18, 5)
+)
+for i, metric in enumerate(metrics):
+before = comparison[
+metric + " Before"
+]
+after = comparison[
+metric + " After"
+]
+axes[i].bar(
+x - width / 2,
+before,
+width,
+label="Before"
+)
+axes[i].bar(
+x + width / 2,
+after,
+width,
+label="After"
+)
+axes[i].set_title(metric)
+axes[i].set_xticks(x)
+axes[i].set_xticklabels(
+model_names,
+rotation=20
+)
+axes[i].set_ylim(
+0,
+1.05
+)
+axes[i].legend()
+plt.suptitle(
+"Model Performance Before and After Optimization"
+)
+plt.tight_layout()
+plt.show()
+print("\n")
+print("=" * 70)
+print("FINAL SUMMARY")
+print("=" * 70)
+for _, row in comparison.iterrows():
+improvement_value = (
+row["Accuracy After"]
+- row["Accuracy Before"]
+)
+print("\nModel:", row["Model"])
+print(
+"Accuracy Before Optimization:",
+round(row["Accuracy Before"], 4)
+)
+print(
+"Accuracy After Optimization :",
+round(row["Accuracy After"], 4)
+)
+print(
+"Accuracy Improvement :",
+round(improvement_value, 4)
+)
+print("\n")
+print("=" * 70)
+print("EXPERIMENT COMPLETED SUCCESSFULLY")
+print("=" * 70)
