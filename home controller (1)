@@ -1,0 +1,18 @@
+print("===== SMART HOME CONTROLLER =====")
+light = input("Is it dark or light? (dark/light): ").strip().lower()
+temperature = input("Are you feeling hot or cold? (hot/cold): ").strip().lower()
+
+print("\n----- Smart Home Response -----")
+if light == "dark":
+  print("It is dark. Light is turned ON.")
+elif light == "light":
+  print("It is bright. Light is turned OFF.")
+else:
+  print("Invalid input for light condition.")
+
+if temperature == "hot":
+  print("You are feeling hot. AC and Fan are turned ON.")
+elif temperature == "cold":
+  print("You are feeling cold. AC and Fan are turned OFF.")
+else:
+  print("Invalid input for temperature.")
