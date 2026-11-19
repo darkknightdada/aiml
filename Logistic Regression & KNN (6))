@@ -1,0 +1,157 @@
+CODE :-
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import (
+accuracy_score,
+precision_score,
+recall_score,
+f1_score,
+confusion_matrix,
+ConfusionMatrixDisplay
+)
+df = pd.read_csv("heart.csv")
+print("First 5 records:")
+print(df.head())
+print("\nDataset Shape:")
+print(df.shape)
+print("\nMissing Values:")
+print(df.isnull().sum())
+X = df.drop("target", axis=1)
+y = df["target"]
+X_train, X_test, y_train, y_test = train_test_split(
+X,
+y,
+test_size=0.20,
+random_state=42,
+stratify=y
+)
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+lr_model = LogisticRegression(max_iter=1000)
+lr_model.fit(X_train_scaled, y_train)
+y_pred_lr = lr_model.predict(X_test_scaled)
+lr_accuracy = accuracy_score(y_test, y_pred_lr)
+lr_precision = precision_score(y_test, y_pred_lr)
+lr_recall = recall_score(y_test, y_pred_lr)
+lr_f1 = f1_score(y_test, y_pred_lr)
+knn_model = KNeighborsClassifier(n_neighbors=5)
+knn_model.fit(X_train_scaled, y_train)
+y_pred_knn = knn_model.predict(X_test_scaled)
+knn_accuracy = accuracy_score(y_test, y_pred_knn)
+knn_precision = precision_score(y_test, y_pred_knn)
+knn_recall = recall_score(y_test, y_pred_knn)
+knn_f1 = f1_score(y_test, y_pred_knn)
+print("\nLOGISTIC REGRESSION")
+print("Accuracy :", round(lr_accuracy, 4))
+print("Precision:", round(lr_precision, 4))
+print("Recall :", round(lr_recall, 4))
+print("F1 Score :", round(lr_f1, 4))
+print("\nLogistic Regression Confusion Matrix:")
+print(confusion_matrix(y_test, y_pred_lr))
+print("\nK-NEAREST NEIGHBORS")
+print("Accuracy :", round(knn_accuracy, 4))
+print("Precision:", round(knn_precision, 4))
+print("Recall :", round(knn_recall, 4))
+print("F1 Score :", round(knn_f1, 4))
+print("\nKNN Confusion Matrix:")
+print(confusion_matrix(y_test, y_pred_knn))
+comparison = pd.DataFrame({
+"Metric": ["Accuracy", "Precision", "Recall", "F1 Score"],
+"Logistic Regression": [
+lr_accuracy,
+lr_precision,
+lr_recall,
+lr_f1
+],
+"KNN": [
+knn_accuracy,
+knn_precision,
+knn_recall,
+knn_f1
+]
+})
+print("\nMODEL COMPARISON")
+print(comparison.to_string(index=False))
+fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+ConfusionMatrixDisplay.from_predictions(
+y_test,
+y_pred_lr,
+ax=axes[0],
+cmap="Blues",
+colorbar=False
+)
+axes[0].set_title("Logistic Regression")
+axes[0].set_xlabel("Predicted Label")
+axes[0].set_ylabel("Actual Label")
+ConfusionMatrixDisplay.from_predictions(
+y_test,
+y_pred_knn,
+ax=axes[1],
+cmap="Greens",
+colorbar=False
+)
+axes[1].set_title("K-Nearest Neighbors")
+axes[1].set_xlabel("Predicted Label")
+axes[1].set_ylabel("Actual Label")
+plt.suptitle("Confusion Matrix Comparison", fontsize=16)
+plt.tight_layout()
+plt.show()
+metrics = ["Accuracy", "Precision", "Recall", "F1 Score"]
+lr_scores = [
+lr_accuracy,
+lr_precision,
+lr_recall,
+lr_f1
+]
+knn_scores = [
+knn_accuracy,
+knn_precision,
+knn_recall,
+knn_f1
+]
+x = range(len(metrics))
+width = 0.35
+plt.figure(figsize=(10, 6))
+bars1 = plt.bar(
+[i - width / 2 for i in x],
+lr_scores,
+width,
+label="Logistic Regression",
+color="royalblue"
+)
+bars2 = plt.bar(
+[i + width / 2 for i in x],
+knn_scores,
+width,
+label="KNN",
+color="darkorange"
+)
+plt.xlabel("Evaluation Metrics")
+plt.ylabel("Score")
+plt.title("Logistic Regression vs KNN")
+plt.xticks(list(x), metrics)
+plt.ylim(0, 1.1)
+plt.legend()
+plt.grid(axis="y", linestyle="--", alpha=0.4)
+for bar in bars1:
+plt.text(
+bar.get_x() + bar.get_width() / 2,
+bar.get_height() + 0.02,
+f"{bar.get_height():.2f}",
+ha="center"
+)
+for bar in bars2:
+plt.text(
+bar.get_x() + bar.get_width() / 2,
+bar.get_height() + 0.02,
+f"{bar.get_height():.2f}",
+ha="center"
+)
+plt.tight_layout()
+plt.show()
+
