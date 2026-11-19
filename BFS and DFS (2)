@@ -1,55 +1,64 @@
+
 from collections import deque
 import time
-
+# Graph represented using adjacency list
 route_graph = {
-    "A": ["B", "C"],
-    "B": ["A", "D", "E"],
-    "C": ["A", "F"],
-    "D": ["B"],
-    "E": ["B", "F"],
-    "F": ["C", "E"],
+'A': ['B', 'C'],
+'B': ['A', 'D', 'E'],
+'C': ['A', 'F'],
+'D': ['B'],
+'E': ['B', 'F'],
+'F': ['C', 'E']
 }
-
-
+# Breadth First Search (BFS)
 def bfs_route(graph, start, goal):
-  start_time = time.perf_counter()
-  queue = deque([[start]])
-  visited = {start}
-  nodes_explored = 0
-
-  while queue:
-    path = queue.popleft()
-    node = path[-1]
-    nodes_explored += 1
-    if node == goal:
-      return path, nodes_explored, time.perf_counter() - start_time
-    for neighbor in graph.get(node, []):
-      if neighbor not in visited:
-        visited.add(neighbor)
-        queue.append(path + [neighbor])
-  return None, nodes_explored, time.perf_counter() - start_time
-
-
+start_time = time.time()
+queue = deque([[start]])
+visited = {start}
+nodes_explored = 0
+while queue:
+path = queue.popleft()
+node = path[-1]
+nodes_explored += 1
+if node == goal:
+elapsed_time = time.time() - start_time
+return path, nodes_explored, elapsed_time
+for neighbor in graph.get(node, []):
+if neighbor not in visited:
+visited.add(neighbor)
+queue.append(path + [neighbor])
+elapsed_time = time.time() - start_time
+return None, nodes_explored, elapsed_time
+# Depth First Search (DFS)
 def dfs_route(graph, start, goal):
-  start_time = time.perf_counter()
-  stack = [[start]]
-  visited = set()
-  nodes_explored = 0
-
-  while stack:
-    path = stack.pop()
-    node = path[-1]
-    if node not in visited:
-      visited.add(node)
-      nodes_explored += 1
-      if node == goal:
-        return path, nodes_explored, time.perf_counter() - start_time
-      for neighbor in reversed(graph.get(node, [])):
-        if neighbor not in visited:
-          stack.append(path + [neighbor])
-  return None, nodes_explored, time.perf_counter() - start_time
-
-
-for name, fn in [("BFS", bfs_route), ("DFS", dfs_route)]:
-  path, explored, elapsed = fn(route_graph, "A", "F")
-  print(f"{name}: path={path}, explored={explored}, time={elapsed:.6f}s")
+start_time = time.time()
+stack = [[start]]
+visited = set()
+nodes_explored = 0
+while stack:
+path = stack.pop()
+node = path[-1]
+if node not in visited:
+visited.add(node)
+nodes_explored += 1
+if node == goal:
+elapsed_time = time.time() - start_time
+return path, nodes_explored, elapsed_time
+for neighbor in reversed(graph.get(node, [])):
+if neighbor not in visited:
+stack.append(path + [neighbor])
+elapsed_time = time.time() - start_time
+return None, nodes_explored, elapsed_time
+# Test from A to F
+start = 'A'
+goal = 'F'
+bfs_result = bfs_route(route_graph, start, goal)
+dfs_result = dfs_route(route_graph, start, goal)
+print("BFS Result:")
+print("Path:", bfs_result[0])
+print("Nodes Explored:", bfs_result[1])
+print("Time:", bfs_result[2], "seconds")
+print("\nDFS Result:")
+print("Path:", dfs_result[0])
+print("Nodes Explored:", dfs_result[1])
+print("Time:", dfs_result[2], "seconds")
