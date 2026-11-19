@@ -1,0 +1,42 @@
+
+# -------------------------------
+# Rule-Based Expert System & Forward Chaining and Backward Chaining
+# -------------------------------
+class Rule:
+def __init__(self, premises, conclusion):
+self.premises = premises
+self.conclusion = conclusion
+# ----------------------------
+# Knowledge Base
+# ----------------------------
+rules = [
+Rule(["Fever", "Cough"], "Flu"),
+Rule(["Flu", "BodyPain"], "ViralInfection"),
+Rule(["ViralInfection"], "Medicine"),
+Rule(["Sneezing"], "Cold"),
+Rule(["Cold"], "Rest")
+]
+# ==================================================
+# FORWARD CHAINING
+# ==================================================
+def forward_chaining(facts, rules):
+inferred = set(facts)
+print("\nInitial Facts:", inferred)
+changed = True
+while changed:
+changed = False
+for rule in rules:
+if all(p in inferred for p in rule.premises):
+if rule.conclusion not in inferred:
+inferred.add(rule.conclusion)
+print("Rule Fired:",rule.premises,"->",rule.conclusion)
+changed = True
+for fact in sorted(result):
+print(fact)
+print("\n============================")
+goal = "Medicine"
+print("\n===== BACKWARD CHAINING =====")
+if backward_chaining(goal, facts, rules):
+print("\nGoal Achieved:", goal)
+else:
+print("\nGoal Cannot be Proved")
